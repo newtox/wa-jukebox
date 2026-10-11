@@ -25,9 +25,9 @@ PORT = int(os.environ.get("PORT", "8000"))
 MP3_BITRATE = os.environ.get("MP3_BITRATE", "192k")
 SPOTIFY_BITRATE = os.environ.get("SPOTIFY_BITRATE", "320")
 INITIAL_VOLUME = os.environ.get("INITIAL_VOLUME", "80")
-# "fixed": the volume slider in Spotify does nothing, every listener sets their own volume in WorkAdventure.
-# Anything else (e.g. "log"): the slider changes the volume for everyone, a few seconds late like everything else.
-VOLUME_CTRL = os.environ.get("VOLUME_CTRL", "fixed")
+# How the Spotify volume slider maps to loudness: log (sounds even), cubic, linear. librespot has no way to ignore
+# the slider, so it always sets the volume for everyone (with the same few seconds of delay as everything else).
+VOLUME_CTRL = os.environ.get("VOLUME_CTRL", "log")
 # For tests: any command that writes 44.1 kHz stereo s16le PCM to stdout.
 LIBRESPOT_CMD = os.environ.get("LIBRESPOT_CMD")
 CREDENTIALS = os.path.join(DATA, "credentials.json")

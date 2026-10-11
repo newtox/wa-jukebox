@@ -67,7 +67,7 @@ Everyone who walks in hears the music, walking out stops it. Then pick "WorkAdve
 | `MP3_BITRATE` | `192k` | Bitrate of the stream |
 | `SPOTIFY_BITRATE` | `320` | Quality fetched from Spotify (96, 160, 320) |
 | `INITIAL_VOLUME` | `80` | Volume in % after a start |
-| `VOLUME_CTRL` | `fixed` | `fixed`: the Spotify volume slider does nothing, every listener sets their own volume in WorkAdventure. `log`: the slider changes the volume for everyone (a few seconds late) |
+| `VOLUME_CTRL` | `log` | How the Spotify volume slider maps to loudness (`log`, `cubic`, `linear`). The slider sets the volume for everyone |
 | `PORT` | `8000` | HTTP port inside the container |
 
 `GET /health` tells whether the jukebox is logged in and how many people listen.

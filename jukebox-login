@@ -1,0 +1,9 @@
+#!/bin/sh
+# One-time Spotify login (Premium account): open the printed link in a browser, log in, then copy the address of
+# the page that fails to load ("http://127.0.0.1/login?code=...") and paste it here. Once it says "Authenticated",
+# press Ctrl+C. The jukebox notices the saved login and starts on its own. Don't play anything in between.
+echo "Spotify-Login: Link öffnen, anmelden, dann die Adresse der Seite, die nicht lädt (http://127.0.0.1/login?code=...),"
+echo "hier einfügen und Enter drücken. Sobald \"Authenticated\" erscheint: Strg+C."
+echo
+exec librespot --name "${DEVICE_NAME:-WorkAdventure Jukebox}" --cache "${DATA_DIR:-/data}" --system-cache "${DATA_DIR:-/data}" \
+    --backend pipe --disable-audio-cache --disable-discovery --enable-oauth --oauth-port 0

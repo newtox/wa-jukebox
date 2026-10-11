@@ -9,7 +9,7 @@ Spotify app ──(Connect)──▶ librespot ──PCM──▶ pacer ──�
 ```
 
 - The stream never breaks off: while nothing plays, listeners get silence, and the music comes back as soon as you press play.
-- About one to three seconds behind the app, like a radio.
+- A few seconds behind the app, like a radio: the jukebox itself adds well under a second, the rest is the browser's buffer.
 - Needs a **Spotify Premium** account (librespot only works with Premium).
 
 Note: Spotify's terms don't allow rebroadcasting its music. Keep the stream private (a hard-to-guess `STREAM_PATH`) and
@@ -67,6 +67,7 @@ Everyone who walks in hears the music, walking out stops it. Then pick "WorkAdve
 | `MP3_BITRATE` | `192k` | Bitrate of the stream |
 | `SPOTIFY_BITRATE` | `320` | Quality fetched from Spotify (96, 160, 320) |
 | `INITIAL_VOLUME` | `80` | Volume in % after a start |
+| `VOLUME_CTRL` | `fixed` | `fixed`: the Spotify volume slider does nothing, every listener sets their own volume in WorkAdventure. `log`: the slider changes the volume for everyone (a few seconds late) |
 | `PORT` | `8000` | HTTP port inside the container |
 
 `GET /health` tells whether the jukebox is logged in and how many people listen.

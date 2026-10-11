@@ -8,6 +8,7 @@ so that a jukebox in WorkAdventure can play it ("play audio" property with the s
 The stream never stops: when Spotify is paused or no one is connected, listeners get silence,
 so the jukebox keeps working as soon as you press play again.
 """
+import fcntl
 import os
 import queue
 import shlex
@@ -24,16 +25,20 @@ PORT = int(os.environ.get("PORT", "8000"))
 MP3_BITRATE = os.environ.get("MP3_BITRATE", "192k")
 SPOTIFY_BITRATE = os.environ.get("SPOTIFY_BITRATE", "320")
 INITIAL_VOLUME = os.environ.get("INITIAL_VOLUME", "80")
+# "fixed": the volume slider in Spotify does nothing, every listener sets their own volume in WorkAdventure.
+# Anything else (e.g. "log"): the slider changes the volume for everyone, a few seconds late like everything else.
+VOLUME_CTRL = os.environ.get("VOLUME_CTRL", "fixed")
 # For tests: any command that writes 44.1 kHz stereo s16le PCM to stdout.
 LIBRESPOT_CMD = os.environ.get("LIBRESPOT_CMD")
 CREDENTIALS = os.path.join(DATA, "credentials.json")
+F_SETPIPE_SZ = 1031
 
 RATE, CHANNELS, SAMPLE_BYTES = 44100, 2, 2
 BYTES_PER_SEC = RATE * CHANNELS * SAMPLE_BYTES
 TICK = 0.02                                        # 20 ms of audio per step
 CHUNK = int(BYTES_PER_SEC * TICK) // 4 * 4
-BUFFER_MAX = int(BYTES_PER_SEC * 1.0) // 4 * 4     # at most 1 s ahead, so pause/skip react quickly
-PREROLL = int(BYTES_PER_SEC * 0.25) // 4 * 4       # wait for 250 ms before (re)starting, avoids stutter
+BUFFER_MAX = int(BYTES_PER_SEC * 0.3) // 4 * 4     # at most 300 ms ahead, so pause/skip react quickly
+PREROLL = int(BYTES_PER_SEC * 0.1) // 4 * 4        # wait for 100 ms before (re)starting, avoids stutter
 SILENCE = bytes(CHUNK)
 
 
@@ -53,8 +58,23 @@ def librespot_cmd():
     return [
         "librespot", "--name", NAME, "--backend", "pipe", "--bitrate", SPOTIFY_BITRATE,
         "--cache", DATA, "--system-cache", DATA, "--disable-audio-cache", "--disable-discovery",
-        "--initial-volume", INITIAL_VOLUME, "--enable-volume-normalisation",
+        "--initial-volume", INITIAL_VOLUME, "--volume-ctrl", VOLUME_CTRL, "--enable-volume-normalisation",
     ]
+
+
+def login_running() -> bool:
+    """Whether `jukebox-login` is still open. Both would register the same device, and closing the
+    login afterwards would sign the jukebox out of Spotify Connect again."""
+    for pid in os.listdir("/proc"):
+        if not pid.isdigit():
+            continue
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as f:
+                if b"--enable-oauth" in f.read():
+                    return True
+        except OSError:
+            pass
+    return False
 
 
 def run_librespot():
@@ -67,8 +87,17 @@ def run_librespot():
                 hinted = True
             time.sleep(3)
             continue
+        if not LIBRESPOT_CMD and login_running():
+            log("waiting for jukebox-login to be closed (Ctrl+C)")
+            while login_running():
+                time.sleep(2)
+            time.sleep(3)
         log("starting librespot as", repr(NAME))
         proc = subprocess.Popen(librespot_cmd(), stdout=subprocess.PIPE, stdin=subprocess.DEVNULL)
+        try:                                       # small pipe: librespot may only be ~25 ms ahead of us
+            fcntl.fcntl(proc.stdout.fileno(), F_SETPIPE_SZ, 4096)
+        except OSError:
+            pass
         while True:
             data = proc.stdout.read1(16384)
             if not data:
